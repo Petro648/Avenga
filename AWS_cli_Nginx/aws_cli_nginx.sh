@@ -1,13 +1,32 @@
 #!/bin/bash
 
-# create security group
-aws ec2 create-security-group --group-name My-SG --description "My security group" --vpc-id vpc-d86ee3b2 | grep GroupId | cut -d'"' -f4 |read GROUPID
+# Creating security group, start instace "ec2", install "Nginx" deploy castom start page abd get public IP instance
 
-aws ec2 authorize-security-group-ingress --group-id $GROUPID --protocol tcp --port 22 --cidr 185.112.172.80/32
+# create security group My-SG
+aws ec2 create-security-group --group-name My-SG --description "My security group" --vpc-id vpc-d86ee3b2 
+
+# reading security group ID for "My-SG"
+GROUPID=$(aws ec2 describe-security-groups --group-names My-SG --query 'SecurityGroups[*].[GroupId]' --output text)
+# reading my public IP
+MY_IP=$(wget -qO- checkip.amazonaws.com)
+
+# Creating rules for "My-SG"
+aws ec2 authorize-security-group-ingress --group-id $GROUPID --protocol tcp --port 22 --cidr $MY_IP/32
+aws ec2 authorize-security-group-ingress --group-id $GROUPID --protocol tcp --port 80 --cidr $MY_IP/32
 
 # run instance
-aws ec2 run-instances --image-id ami-0767046d1677be5a0 --count 1 --instance-type t2.micro --key-name aws-test --security-group-ids $GROUPID --subnet-id subnet-3010645a
+aws ec2 run-instances --image-id ami-0767046d1677be5a0 --count 1 --instance-type t2.micro \
+--key-name aws-test --security-group-ids $GROUPID --subnet-id subnet-3010645a --user-data file://install2.sh
 
+# waiting
+echo "
+Please wait"
+aws ec2 wait instance-status-ok
+
+#PublicIpAddress
+echo "
+Public IP address:"
+aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output text 
 # waiting
 aws ec2 wait instance-status-ok
 
