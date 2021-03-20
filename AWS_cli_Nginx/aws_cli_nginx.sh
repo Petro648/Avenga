@@ -27,8 +27,6 @@ aws ec2 wait instance-status-ok
 echo "
 Public IP address:"
 aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output text 
-# waiting
-aws ec2 wait instance-status-ok
 
 #Run a Bash script using Run Command 
 
